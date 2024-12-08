@@ -1,0 +1,460 @@
+package java1;
+import java.util.*;
+
+class Course {
+    String name;
+    int period;
+    double gpaValue;
+    double difficulty;
+    double relevance;
+    String courseType;
+    List<String> prerequisites = new ArrayList<>();
+    int gradeMin = 9;
+    int gradeMax = 12;
+    boolean isEnglish = false;
+    boolean isMath = false;
+    boolean isRequiredCategory = false;
+
+    public Course(String name, int period) {
+        this.name = name;
+        this.period = period;
+    }
+}
+
+class Student {
+    int currentGrade;
+    List<String> completedCourses = new ArrayList<>();
+    int majorDirection;
+
+    public Student(int currentGrade, List<String> completedCourses, int majorDirection) {
+        this.currentGrade = currentGrade;
+        this.completedCourses.addAll(completedCourses);
+        this.majorDirection = majorDirection;
+    }
+}
+
+class RequirementChecker {
+    public boolean meetRequirements(List<Course> selection, Student student) {
+        // 简化要求：至少有符合年级的英语课
+        boolean hasEnglish = false;
+        for (Course c : selection) {
+            if (c.isEnglish && isCorrectEnglishGrade(c, student.currentGrade)) {
+                hasEnglish = true;
+                break;
+            }
+        }
+        return hasEnglish;
+    }
+
+    public boolean isMathConflict(Course newCourse, List<Course> currentSelection) {
+        if (!newCourse.isMath) return true;
+        // 简化：一年只选一门基础数学课
+        long mathCount = currentSelection.stream().filter(c -> c.isMath).count();
+        return mathCount == 0;
+    }
+
+    public boolean isEnglishValid(Course newCourse, Student student, List<Course> currentSelection) {
+        if (!newCourse.isEnglish) return true;
+        // 每年只能一门英语课
+        for (Course c : currentSelection) {
+            if (c.isEnglish) return false;
+        }
+        return isCorrectEnglishGrade(newCourse, student.currentGrade);
+    }
+
+    private boolean isCorrectEnglishGrade(Course c, int grade) {
+        String n = c.name.toLowerCase();
+        if (n.contains("english 9") && grade == 9) return true;
+        if (n.contains("english 10") && grade == 10) return true;
+        if (n.contains("english 11") && grade == 11) return true;
+        if (n.contains("english 12") && grade == 12) return true;
+        if (n.contains("ap english language") && grade >= 11) return true;
+        return false;
+    }
+}
+
+interface CourseScoringStrategy {
+    double score(Course c);
+}
+
+class MaxGpaStrategy implements CourseScoringStrategy {
+    @Override
+    public double score(Course c) {
+        return c.gpaValue;
+    }
+}
+
+class MaxRelevanceStrategy implements CourseScoringStrategy {
+    @Override
+    public double score(Course c) {
+        return c.relevance;
+    }
+}
+
+class MinDifficultyStrategy implements CourseScoringStrategy {
+    @Override
+    public double score(Course c) {
+        return 1.0 / c.difficulty;
+    }
+}
+
+public class IntelligentCourseSelectionAllInput {
+    static class Pair {
+        double bestScore;
+        List<Course> bestSelection;
+
+        public Pair(double bestScore, List<Course> bestSelection) {
+            this.bestScore = bestScore;
+            this.bestSelection = new ArrayList<>(bestSelection);
+        }
+    }
+
+    public static void main(String[] args) {
+        Scanner scanner = new Scanner(System.in);
+
+        System.out.println("请输入当前年级(9-12):");
+        int currentGrade = scanner.nextInt();
+        scanner.nextLine();
+
+        System.out.println("请输入已完成的课程名称(一行一个)，输入空行结束:");
+        List<String> completedCoursesInput = new ArrayList<>();
+        while (true) {
+            String line = scanner.nextLine().trim();
+            if (line.isEmpty()) break;
+            completedCoursesInput.add(line);
+        }
+
+        System.out.println("请选择专业方向编号(1-8):");
+        int majorDirection = scanner.nextInt();
+        scanner.nextLine();
+
+        // 初始化课程数据
+        List<Course> allCourses = new ArrayList<>();
+        // Period 1 (index=0)
+        allCourses.add(createCourse("Biology, CP",0));
+        allCourses.add(createCourse("Geometry, Honors",0));
+        allCourses.add(createCourse("Instrumental Music I (Fall) / Instrumental Music II(Spring)",0));
+        allCourses.add(createCourse("Chemistry, Honors",0));
+        allCourses.add(createCourse("Modern World History, CP",0));
+        allCourses.add(createCourse("Financial Literacy (Fall)/ Intro to Business (Spring)",0));
+        allCourses.add(createCourse("SAT English (Spring)",0));
+        allCourses.add(createCourse("SAT Math (Fall)/SAT Math (Spring)",0));
+        allCourses.add(createCourse("English 11, Honors",0));
+        allCourses.add(createCourse("PE/Health (Fall) / PE/Health (Spring)",0));
+        allCourses.add(createCourse("Spanish IV, Honors",0));
+        allCourses.add(createCourse("Arabic III & IV, Honors",0));
+        allCourses.add(createCourse("Essay Writing for Seniors (Fall)",0));
+        allCourses.add(createCourse("AP Statistics",0));
+        allCourses.add(createCourse("Cybersecurity",0));
+
+        // Period 2 (index=1)
+        allCourses.add(createCourse("Algebra I",1));
+        allCourses.add(createCourse("Geometry, CP",1));
+        allCourses.add(createCourse("Graphic Design - Full Year",1));
+        allCourses.add(createCourse("Modern World History, CP",1));
+        allCourses.add(createCourse("English 10, Honors",1));
+        allCourses.add(createCourse("Honors Precalculus",1));
+        allCourses.add(createCourse("Spanish III, Honors",1));
+        allCourses.add(createCourse("Anatomy and Physiology",1));
+        allCourses.add(createCourse("Instrumental Music I (Fall) / Instrumental Music II(Spring)",1));
+        allCourses.add(createCourse("National & International Current Affairs (Fall) / Public Speaking (Spring)",1));
+        allCourses.add(createCourse("English 12, CP",1));
+        allCourses.add(createCourse("AP US History",1));
+        allCourses.add(createCourse("Broadcast Media Production",1));
+        allCourses.add(createCourse("Dynamic Programming",1));
+
+        // Period 3 (index=2)
+        allCourses.add(createCourse("Spanish I /Arabic I /Turkish I / Chinese I / French I (Independent Study with a Supervisor)",2));
+        allCourses.add(createCourse("English 9, Honors",2));
+        allCourses.add(createCourse("Digital Visual Art (Fall) / Cultivating Creativity (Spring)",2));
+        allCourses.add(createCourse("Instrumental Music I (Fall) / Instrumental Music II(Spring)",2));
+        allCourses.add(createCourse("English 10, CP",2));
+        allCourses.add(createCourse("AP Precalculus",2));
+        allCourses.add(createCourse("Chemistry, CP",2));
+        allCourses.add(createCourse("Web Development I (Fall) /Web Development II",2));
+        allCourses.add(createCourse("Sociology of the Future (Fall) / Global Issues (Spring)",2));
+        allCourses.add(createCourse("Pre Calculus, CP",2));
+        allCourses.add(createCourse("National & International Current Affairs (Fall) / Public Speaking (Spring)",2));
+        allCourses.add(createCourse("PE/Health (Fall) / PE/Health (Spring)",2));
+        allCourses.add(createCourse("AP English Language & Composition",2));
+        allCourses.add(createCourse("Calculus",2));
+        allCourses.add(createCourse("AP Physics I",2));
+
+        // Period 4 (index=3)
+        allCourses.add(createCourse("US History, CP",3));
+        allCourses.add(createCourse("Biology, Honors",3));
+        allCourses.add(createCourse("PE/Health (Fall) / PE/Health (Spring)",3));
+        allCourses.add(createCourse("Spanish II, Honors",3));
+        allCourses.add(createCourse("Arabic II, CP",3));
+        allCourses.add(createCourse("Instrumental Music I (Fall) / Instrumental Music II(Spring)",3));
+        allCourses.add(createCourse("English 11",3));
+        allCourses.add(createCourse("AP Computer Science A",3));
+        allCourses.add(createCourse("AP Chemistry with BiWeekly Labs (Thursday Afterschool)",3));
+        allCourses.add(createCourse("Financial Literacy (Fall)/ Intro to Business (Spring)",3));
+        allCourses.add(createCourse("Juniors Only with cumulative unweighted GPA 3.75 and above",3));
+        allCourses.add(createCourse("Seniors Only Independent Online Courses with a Supervisor (Fall) / Independent Online Courses with a Supervisor (Spring)",3));
+        allCourses.add(createCourse("Intro to World Religions, Mythology, and Belief Systems I (Fall) / Intro to World Religions, Mythology, and Belief",3));
+        allCourses.add(createCourse("Sociology (Fall)/Anthropology(Spring)",3));
+
+        // Period 5 (index=4)
+        allCourses.add(createCourse("PE/Health (Fall) / PE/Health (Spring)",4));
+        allCourses.add(createCourse("English 9, Honors",4));
+        allCourses.add(createCourse("Pencil and Ink Illustration (Fall) / Drawing and Painting (Spring)",4));
+        allCourses.add(createCourse("US History, Honors",4));
+        allCourses.add(createCourse("Chemistry, CP",4));
+        allCourses.add(createCourse("Computer Programming I (Fall) / Computer Programming II (Spring)",4));
+        allCourses.add(createCourse("AP Biology",4));
+        allCourses.add(createCourse("AP Psychology",4));
+        allCourses.add(createCourse("Physics, CP/Honors",4));
+        allCourses.add(createCourse("AP Comparative Government and Politics",4));
+        allCourses.add(createCourse("Entrepreneurship / Marketing",4));
+        allCourses.add(createCourse("Pre Calculus, CP",4));
+        allCourses.add(createCourse("Calculus",4));
+        allCourses.add(createCourse("AP Calculus AB",4));
+        allCourses.add(createCourse("Principles of Business (Fall)/ Project Management (Spring)",4));
+
+        // Period 6 (index=5) - Lunch，无课程
+
+        // Period 7 (index=6)
+        allCourses.add(createCourse("English 9, CP",6));
+        allCourses.add(createCourse("US History, Honors(Full)",6));
+        allCourses.add(createCourse("Biology, Honors",6));
+        allCourses.add(createCourse("Algebra II",6));
+        allCourses.add(createCourse("Modern World History, Honors",6));
+        allCourses.add(createCourse("Modern World History, Honors",6)); // 重复条目
+        allCourses.add(createCourse("English 10, CP",6));
+        allCourses.add(createCourse("AP US Government and Politics",6));
+        allCourses.add(createCourse("AP Macroeconomics",6));
+        allCourses.add(createCourse("AP Computer Science Principles",6));
+        allCourses.add(createCourse("Principles of Engineering (Fall)\nArchitectural CAD (Spring)",6));
+        allCourses.add(createCourse("Environmental Science",6));
+        allCourses.add(createCourse("English 12, Honors",6));
+        allCourses.add(createCourse("Honors Probability & Statistics",6));
+
+        // Period 8 (index=7)
+        allCourses.add(createCourse("Digital Visual Art (Fall) / Animated Thinking (Spring)",7));
+        allCourses.add(createCourse("Instrumental Music I (Fall) / Instrumental Music II(Spring)",7));
+        allCourses.add(createCourse("Honors Spanish I",7));
+        allCourses.add(createCourse("Geometry, CP",7));
+        allCourses.add(createCourse("Algebra 2, Honors",7));
+        allCourses.add(createCourse("PE/Health (Fall) / PE/Health (Spring)",7));
+        allCourses.add(createCourse("Cultural Studies I/ Cultural Studies II",7));
+        allCourses.add(createCourse("Forensic Science (Fall)/ Introduction to Organic Chemistry (Spring)",7));
+        allCourses.add(createCourse("AP European History",7));
+        allCourses.add(createCourse("English 11, Honors",7));
+        allCourses.add(createCourse("AP Microeconomics",7));
+        allCourses.add(createCourse("AP Calculus BC",7));
+        allCourses.add(createCourse("English 12, Honors(Full)",7));
+
+        // 构建periodsCourses
+        List<List<Course>> periodsCourses = new ArrayList<>();
+        for (int i = 0; i < 8; i++) {
+            periodsCourses.add(new ArrayList<>());
+        }
+        for (Course c : allCourses) {
+            periodsCourses.get(c.period).add(c);
+        }
+
+        Student student = new Student(currentGrade, completedCoursesInput, majorDirection);
+        Set<String> completedCourses = new HashSet<>(student.completedCourses);
+        RequirementChecker reqChecker = new RequirementChecker();
+
+        // 执行回溯搜索
+        List<Course> bestSelectionGPA = new ArrayList<>();
+        Pair resultGPA = backtrackSelectCourses(student, periodsCourses, 0, completedCourses,
+                new MaxGpaStrategy(), new ArrayList<>(), 0.0, -1.0, bestSelectionGPA, reqChecker);
+
+        List<Course> bestSelectionRel = new ArrayList<>();
+        Pair resultRel = backtrackSelectCourses(student, periodsCourses, 0, completedCourses,
+                new MaxRelevanceStrategy(), new ArrayList<>(), 0.0, -1.0, bestSelectionRel, reqChecker);
+
+        List<Course> bestSelectionEasy = new ArrayList<>();
+        Pair resultEasy = backtrackSelectCourses(student, periodsCourses, 0, completedCourses,
+                new MinDifficultyStrategy(), new ArrayList<>(), 0.0, -1.0, bestSelectionEasy, reqChecker);
+
+        System.out.println("GPA最高方案：");
+        printCourses(resultGPA.bestSelection);
+
+        System.out.println("最相关专业方案：");
+        printCourses(resultRel.bestSelection);
+
+        System.out.println("最简单方案：");
+        printCourses(resultEasy.bestSelection);
+    }
+
+    private static boolean isLunchPeriod(int currentPeriodIndex) {
+        return currentPeriodIndex == 5;
+    }
+
+    private static Pair backtrackSelectCourses(
+            Student student,
+            List<List<Course>> periodsCourses,
+            int currentPeriodIndex,
+            Set<String> completedCourses,
+            CourseScoringStrategy scoringStrategy,
+            List<Course> currentSelection,
+            double currentScore,
+            double bestScore,
+            List<Course> bestSelection,
+            RequirementChecker reqChecker
+    ) {
+        if (currentPeriodIndex == periodsCourses.size()) {
+            if (reqChecker.meetRequirements(currentSelection, student)) {
+                if (currentScore > bestScore) {
+                    bestScore = currentScore;
+                    bestSelection.clear();
+                    bestSelection.addAll(currentSelection);
+                }
+            }
+            return new Pair(bestScore, bestSelection);
+        }
+
+        if (isLunchPeriod(currentPeriodIndex)) {
+            // 跳过午餐时段
+            return backtrackSelectCourses(
+                    student, periodsCourses, currentPeriodIndex + 1, completedCourses,
+                    scoringStrategy, currentSelection, currentScore, bestScore, bestSelection, reqChecker
+            );
+        }
+
+        for (Course c : periodsCourses.get(currentPeriodIndex)) {
+            if (!meetGradeRestriction(c, student.currentGrade)) continue;
+            if (!meetPrerequisite(c, completedCourses)) continue;
+            if (!reqChecker.isMathConflict(c, currentSelection)) continue;
+            if (!reqChecker.isEnglishValid(c, student, currentSelection)) continue;
+
+            currentSelection.add(c);
+            double newScore = currentScore + scoringStrategy.score(c);
+
+            Pair result = backtrackSelectCourses(
+                    student, periodsCourses, currentPeriodIndex + 1, completedCourses,
+                    scoringStrategy, currentSelection, newScore, bestScore, bestSelection, reqChecker
+            );
+
+            double returnedScore = result.bestScore;
+            List<Course> returnedSelection = result.bestSelection;
+            if (returnedScore > bestScore) {
+                bestScore = returnedScore;
+                bestSelection.clear();
+                bestSelection.addAll(returnedSelection);
+            }
+
+            currentSelection.remove(currentSelection.size() - 1);
+        }
+
+        return new Pair(bestScore, bestSelection);
+    }
+
+    private static boolean meetGradeRestriction(Course c, int grade) {
+        return grade >= c.gradeMin && grade <= c.gradeMax;
+    }
+
+    private static boolean meetPrerequisite(Course c, Set<String> completedCourses) {
+        for (String pre : c.prerequisites) {
+            if (!completedCourses.contains(pre)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private static void printCourses(List<Course> courses) {
+        if (courses.isEmpty()) {
+            System.out.println("无可行方案");
+            System.out.println();
+            return;
+        }
+        for (Course c : courses) {
+            System.out.println("Period " + (c.period + 1) + ": " + c.name);
+        }
+        System.out.println();
+    }
+
+    private static Course createCourse(String name, int period) {
+        Course c = new Course(name, period);
+
+        // 判定课程等级
+        String lower = name.toLowerCase();
+        if (lower.contains("ap ")) {
+            c.gpaValue = 5.33; c.difficulty = 5.0; c.relevance = 5.0;
+        } else if (lower.contains("honors")) {
+            c.gpaValue = 5.00; c.difficulty = 4.0; c.relevance = 4.5;
+        } else if (lower.contains("cp")) {
+            c.gpaValue = 4.33; c.difficulty = 3.0; c.relevance = 4.0;
+        } else {
+            c.gpaValue = 4.00; c.difficulty = 2.5; c.relevance = 3.5;
+        }
+
+        // 判定类型
+        if (lower.contains("english") || lower.contains("essay writing")) {
+            c.courseType = "English";
+            c.isEnglish = true;
+            c.isRequiredCategory = true;
+        } else if (lower.contains("algebra") || lower.contains("geometry") 
+                || lower.contains("precalculus") || lower.contains("calculus") 
+                || lower.contains("statistics")) {
+            c.courseType = "Math";
+            c.isMath = true;
+            c.isRequiredCategory = true;
+        } else if (lower.contains("biology") || lower.contains("chemistry") 
+                || lower.contains("physics") || lower.contains("anatomy") 
+                || lower.contains("forensic science") || lower.contains("environmental science")) {
+            c.courseType = "Science";
+            c.isRequiredCategory = true;
+        } else if (lower.contains("history") || lower.contains("government") 
+                || lower.contains("politics") || lower.contains("sociology") 
+                || lower.contains("anthropology") || lower.contains("economics") 
+                || lower.contains("world religions") || lower.contains("global issues") 
+                || lower.contains("current affairs") || lower.contains("comparative government") 
+                || lower.contains("macroeconomics") || lower.contains("microeconomics") 
+                || lower.contains("us government")) {
+            c.courseType = "SocialStudies";
+            c.isRequiredCategory = true;
+        } else if (lower.contains("spanish") || lower.contains("arabic") 
+                || lower.contains("turkish") || lower.contains("chinese") 
+                || lower.contains("french")) {
+            c.courseType = "WorldLanguage";
+            c.isRequiredCategory = true;
+        } else if (lower.contains("pe/health")) {
+            c.courseType = "PE/Health";
+            c.isRequiredCategory = true;
+        } else if (lower.contains("instrumental music") || lower.contains("graphic design")
+                || lower.contains("digital visual art") || lower.contains("drawing and painting")
+                || lower.contains("pencil and ink illustration") || lower.contains("animated thinking")
+                || lower.contains("cultivating creativity")) {
+            c.courseType = "Arts";
+            c.isRequiredCategory = true;
+        } else if (lower.contains("financial literacy") || lower.contains("intro to business")
+                || lower.contains("principles of business") || lower.contains("marketing")
+                || lower.contains("entrepreneurship") || lower.contains("project management")) {
+            c.courseType = "Business";
+            c.isRequiredCategory = true;
+        } else if (lower.contains("computer programming") || lower.contains("ap computer science")
+                || lower.contains("web development") || lower.contains("cybersecurity")
+                || lower.contains("dynamic programming") || lower.contains("architectural cad")
+                || lower.contains("broadcast media")) {
+            c.courseType = "Tech";
+            c.isRequiredCategory = true;
+        } else {
+            c.courseType = "Other";
+        }
+
+        // 年级限制：AP English Language & Composition必须11年级及以上
+        if (name.contains("AP English Language")) {
+            c.gradeMin = 11;
+        }
+
+        // 简化前置条件示例（可根据需求添加）
+        if (c.name.toLowerCase().contains("geometry")) {
+            c.prerequisites.add("Algebra I");
+        }
+        if (c.name.toLowerCase().contains("precalculus")) {
+            // 简化要求，假设需要已完成Geometry才能上Precalculus
+            // 此处没有区分CP/Honors/AP，实际可更精细化
+            c.prerequisites.add("Geometry, CP"); 
+            c.prerequisites.add("Geometry, Honors"); 
+        }
+
+        return c;
+    }
+}
