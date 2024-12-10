@@ -176,7 +176,7 @@ function addCourseRow(courseNameValue = '', gradeValue = '') {
     gradeInput.name = 'grade';
     gradeInput.min = 0;
     gradeInput.max = 100;
-    gradeInput.step = 0.01;
+    gradeInput.step = 1;
     gradeInput.placeholder = 'e.g., 95';
     gradeInput.value = gradeValue;
     gradeCell.appendChild(gradeInput);
@@ -343,6 +343,10 @@ function calculateGPA() {
 }
 
 function getLetterGrade(numericalGrade) {
+    // Count any score above 100 as A+
+    if (numericalGrade > 100) {
+        return "A+";
+    }
     for (let i = 0; i < gradeScale.length; i++) {
         const gradeRange = gradeScale[i];
         if (numericalGrade >= gradeRange.min && numericalGrade <= gradeRange.max) {
@@ -361,7 +365,7 @@ function getGpaPointsFromLetter(letterGrade, courseLevel) {
     return 0.0;
 }
 
-// Save courses to local storage
+// Save courses to local storage and check for duplicates
 function saveCoursesToLocalStorage() {
     const tbody = document.getElementById('courses-tbody');
     const rows = tbody.getElementsByTagName('tr');
@@ -372,7 +376,7 @@ function saveCoursesToLocalStorage() {
         const courseNameInput = row.querySelector('input[name="courseName"]');
         const gradeInput = row.querySelector('input[name="grade"]');
 
-        const courseName = courseNameInput.value || '';
+        const courseName = courseNameInput.value.trim();
         const grade = gradeInput.value || '';
 
         coursesData.push({
@@ -382,6 +386,18 @@ function saveCoursesToLocalStorage() {
     }
 
     localStorage.setItem('coursesData', JSON.stringify(coursesData));
+
+    // Check for duplicates
+    const nameCounts = {};
+    for (const c of coursesData) {
+        if (!c.courseName) continue;
+        nameCounts[c.courseName] = (nameCounts[c.courseName] || 0) + 1;
+    }
+
+    const duplicates = Object.keys(nameCounts).filter(name => nameCounts[name] > 1);
+    if (duplicates.length > 0) {
+        alert("You have chosen the same course more than once: " + duplicates.join(", "));
+    }
 }
 
 // Load courses from local storage
