@@ -65,7 +65,7 @@ const coursesByLevel = {
         "Ancient World History",
         "Introduction to World Religions",
         "Computer Programming I / II",
-        "Spanish I / Arabic I /  Turkish I / Chinese I /  French I",
+        "Spanish I / Arabic I / Turkish I / Chinese I / French I",
         "CP Arabic II",
         "Turkish",
         "SAT Math",
@@ -131,7 +131,14 @@ for (const [level, courses] of Object.entries(coursesByLevel)) {
     });
 }
 
-function addCourseRow() {
+document.getElementById('add-course-btn').addEventListener('click', () => {
+    addCourseRow();
+    saveCoursesToLocalStorage();
+});
+document.getElementById('calculate-btn').addEventListener('click', calculateGPA);
+
+// Add course row function
+function addCourseRow(courseNameValue = '', gradeValue = '') {
     const tbody = document.getElementById('courses-tbody');
     const row = document.createElement('tr');
 
@@ -144,6 +151,7 @@ function addCourseRow() {
     courseNameInput.type = 'text';
     courseNameInput.name = 'courseName';
     courseNameInput.placeholder = 'Start typing to search...';
+    courseNameInput.value = courseNameValue;
 
     const dropdownList = document.createElement('div');
     dropdownList.className = 'dropdown-list';
@@ -170,6 +178,7 @@ function addCourseRow() {
     gradeInput.max = 100;
     gradeInput.step = 0.01;
     gradeInput.placeholder = 'e.g., 95';
+    gradeInput.value = gradeValue;
     gradeCell.appendChild(gradeInput);
     row.appendChild(gradeCell);
 
@@ -182,13 +191,7 @@ function addCourseRow() {
 
     // Update letter grade display when numerical grade is input
     gradeInput.addEventListener('input', function () {
-        const numericalGrade = parseFloat(gradeInput.value);
-        if (!isNaN(numericalGrade)) {
-            const letter = getLetterGrade(numericalGrade);
-            letterGradeDisplay.textContent = letter;
-        } else {
-            letterGradeDisplay.textContent = '';
-        }
+        updateLetterGradeAndSave(row);
     });
 
     // Custom dropdown functionality
@@ -210,16 +213,8 @@ function addCourseRow() {
                     option.addEventListener('click', function () {
                         courseNameInput.value = course;
                         dropdownList.style.display = 'none';
-
-                        // Automatically set course level
-                        const courseName = course.toLowerCase();
-                        const level = courseLevelMap[courseName];
-                        if (level) {
-                            const levelText = courseLevels.find(l => l.value === level).text;
-                            courseLevelDisplay.textContent = levelText;
-                        } else {
-                            courseLevelDisplay.textContent = 'Standard';
-                        }
+                        setCourseLevel(courseNameInput, courseLevelDisplay);
+                        saveCoursesToLocalStorage();
                     });
                     dropdownList.appendChild(option);
                 });
@@ -231,6 +226,8 @@ function addCourseRow() {
             dropdownList.style.display = 'none';
             courseLevelDisplay.textContent = '';
         }
+
+        saveCoursesToLocalStorage();
     });
 
     // Hide dropdown when clicking outside
@@ -248,11 +245,52 @@ function addCourseRow() {
     removeButton.classList.add('remove-btn');
     removeButton.onclick = function () {
         tbody.removeChild(row);
+        saveCoursesToLocalStorage();
     };
     removeCell.appendChild(removeButton);
     row.appendChild(removeCell);
 
     tbody.appendChild(row);
+
+    // If we have a course name prefilled, set the course level
+    if (courseNameValue) {
+        setCourseLevel(courseNameInput, courseLevelDisplay);
+    }
+
+    // If we have a grade prefilled, set the letter grade
+    if (gradeValue) {
+        updateLetterGradeAndSave(row, false);
+    }
+
+    // Save changes whenever fields lose focus or are changed
+    courseNameInput.addEventListener('change', saveCoursesToLocalStorage);
+    gradeInput.addEventListener('change', saveCoursesToLocalStorage);
+}
+
+function setCourseLevel(courseNameInput, courseLevelDisplay) {
+    const courseName = courseNameInput.value.toLowerCase();
+    const level = courseLevelMap[courseName];
+    if (level) {
+        const levelText = courseLevels.find(l => l.value === level).text;
+        courseLevelDisplay.textContent = levelText;
+    } else {
+        courseLevelDisplay.textContent = 'Standard';
+    }
+}
+
+function updateLetterGradeAndSave(row, save = true) {
+    const gradeInput = row.querySelector('input[name="grade"]');
+    const letterGradeDisplay = row.querySelector('.letter-grade');
+
+    const numericalGrade = parseFloat(gradeInput.value);
+    if (!isNaN(numericalGrade)) {
+        const letter = getLetterGrade(numericalGrade);
+        letterGradeDisplay.textContent = letter;
+    } else {
+        letterGradeDisplay.textContent = '';
+    }
+
+    if (save) saveCoursesToLocalStorage();
 }
 
 function calculateGPA() {
@@ -323,10 +361,50 @@ function getGpaPointsFromLetter(letterGrade, courseLevel) {
     return 0.0;
 }
 
-document.getElementById('add-course-btn').addEventListener('click', addCourseRow);
-document.getElementById('calculate-btn').addEventListener('click', calculateGPA);
+// Save courses to local storage
+function saveCoursesToLocalStorage() {
+    const tbody = document.getElementById('courses-tbody');
+    const rows = tbody.getElementsByTagName('tr');
+    const coursesData = [];
 
-// Add five default course rows
-for (let i = 0; i < 5; i++) {
-    addCourseRow();
+    for (let i = 0; i < rows.length; i++) {
+        const row = rows[i];
+        const courseNameInput = row.querySelector('input[name="courseName"]');
+        const gradeInput = row.querySelector('input[name="grade"]');
+
+        const courseName = courseNameInput.value || '';
+        const grade = gradeInput.value || '';
+
+        coursesData.push({
+            courseName,
+            grade
+        });
+    }
+
+    localStorage.setItem('coursesData', JSON.stringify(coursesData));
 }
+
+// Load courses from local storage
+function loadCoursesFromLocalStorage() {
+    const data = localStorage.getItem('coursesData');
+    if (data) {
+        const coursesData = JSON.parse(data);
+        if (coursesData.length > 0) {
+            // Clear table first
+            document.getElementById('courses-tbody').innerHTML = '';
+            // Populate with stored data
+            coursesData.forEach(course => {
+                addCourseRow(course.courseName, course.grade);
+            });
+            return;
+        }
+    }
+
+    // If no data, add default rows
+    for (let i = 0; i < 5; i++) {
+        addCourseRow();
+    }
+}
+
+// Initial load
+loadCoursesFromLocalStorage();
